@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Light Strip!</title>
+        <script src="./node_modules/blockly/blockly_compressed.js"></script>
+        <script src="./node_modules/blockly/javascript_compressed.js"></script>
+        <script src="./node_modules/blockly/blocks_compressed.js"></script>
+        <script src="./node_modules/blockly/msg/en.js"></script>
+    </head>
+    <body>
+        
+        <div id="title" style="padding-bottom:10px;font-size:x-large">Light Strip</div>
+        <div style="padding:10px">
+            <button onclick="onClickStop()">Stop</button>
+            <button onclick="onClickRun()">Run</button>
+        </div>
+        
+        <div style="display:flex; flex-direction:row; flex-wrap:nowrap; width:100%">
+            <div style="flex: 1">
+                <div id="blocklyDiv" style="height: 800px; width: 100%;"></div>
+            </div>
+            
+            <div style="flex: 0 0 230px">
+                <select name="scripts" style="width:100%" onclick="onClickScripts()" id="script-select" size=47>
+                </select>
+                
+        
+                <button onclick="onClickSave()">Save</button>
+                <button onclick="onClickSaveCopy()">Save Copy</button>
+                <button onclick="onClickNew()">New</button>
+            </div>
+
+        </div>
+
+        
+        
+       
+
+        <xml id="toolbox" style="display: none">
+            <category name="Control">
+            <block type="wait"></block>
+            <block type="controls_if"></block>
+            <block type="controls_for">
+                <value name="FROM">
+                    <block type="math_number">
+                      <field name="NUM">0</field>
+                    </block>
+                  </value>
+                  <value name="TO">
+                    <block type="math_number">
+                      <field name="NUM">99</field>
+                    </block>
+                  </value>
+                  <value name="BY">
+                    <block type="math_number">
+                      <field name="NUM">1</field>
+                    </block>
+                  </value>
+            </block>
+            <block type="controls_whileUntil"></block>
+            <block type="controls_repeat_ext"></block>
+            <block type="logic_compare"></block>
+            <block type="math_number"></block>
+            <block type="set_color"></block>
+            <block type="math_arithmetic"></block>
+        </category>
+        <category name="Colours">
+            <block type="custom_color"></block>
+            <block type="hsv_color"></block>
+            <block type="black_color"></block>
+            <block type="red_color"></block>
+            <block type="green_color"></block>
+            <block type="blue_color"></block>
+            <block type="white_color"></block>
+        </category>
+
+            <category name="Variables" custom="VARIABLE"></category>
+        </xml>    
+
+<script>
+
+var colorChanges = []
+
+var loadedScriptId;
+var loadedScriptName;
+
+function loadEntries() {
+    console.log("Loading entries");
+    const request = new XMLHttpRequest();
+    request.open('GET', 'http://192.168.0.10:5007/api/BlocklyScripts');
+    request.setRequestHeader('Content-Type', 'application/json');
+
+    request.onreadystatechange = function() {
+        console.log("onreadystatechange" + request.readyState);
+        if (request.readyState == XMLHttpRequest.DONE) {
+            entries = JSON.parse(request.responseText);
+            console.log(entries);
+
+            const scripts = document.querySelector('#script-select');
+            entries.forEach( entry => {
+                var opt = document.createElement('option');
+                opt.value = entry.guid;
+                opt.innerHTML = entry.Name;
+                scripts.appendChild(opt);
+            });
+        }
+    }
+
+    request.send();
+}
+
+function setTitle(title)
+{
+    const titleElement = document.querySelector('#title');
+ 
+    if (title.length > 0){
+        titleElement.innerHTML = "Light Strip - " + title;
+    }
+    else {
+        titleElement.innerHTML = "Light Strip";
+    }
+}
+
+
+function onClickScripts()
+{
+    const scripts = document.querySelector('#script-select');
+    load(scripts.value);
+}
+
+function onClickStop() {
+    const request = new XMLHttpRequest();
+        request.open('POST', 'http://192.168.0.10:5007/api/lightstrip/reset');
+        request.setRequestHeader('Content-Type', 'application/json');
+        request.send();
+}
+
+function onClickNew() {
+    const name = prompt("Name:");
+
+    if (name.length > 0)
+    {
+        Blockly.mainWorkspace.clear();
+        setTitle(name);
+
+        const xml = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
+        const script = Blockly.Xml.domToText(xml);
+
+        const request = new XMLHttpRequest();
+        request.open('PUT', 'http://192.168.0.10:5007/api/BlocklyScript');
+        request.setRequestHeader('Content-Type', 'application/json');
+
+
+        request.onreadystatechange = function() {
+            if (request.readyState == XMLHttpRequest.DONE) {
+                var scriptId = request.responseText;
+                console.log(scriptId);
+
+                const scripts = document.querySelector('#script-select');        
+                var opt = document.createElement('option');
+                opt.value = scriptId;
+                opt.innerHTML = name;
+                scripts.value = scriptId;
+                loadedScriptId = scriptId;
+                loadedScriptName = name;
+                scripts.appendChild(opt);
+            }
+        }
+
+        var body = {"Name": name,
+                    "Script": script};
+
+        request.send(JSON.stringify(body));
+    }
+    
+}
+
+function onClickSaveCopy() {
+    getNameAndSave();
+}
+
+function getNameAndSave() {
+    const name = prompt("Name:");
+        
+        if (name.length > 0){
+            setTitle(name);
+
+            const xml = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
+            const script = Blockly.Xml.domToText(xml);
+
+            const request = new XMLHttpRequest();
+            request.open('PUT', 'http://192.168.0.10:5007/api/BlocklyScript');
+            request.setRequestHeader('Content-Type', 'application/json');
+
+
+            request.onreadystatechange = function() {
+                if (request.readyState == XMLHttpRequest.DONE) {
+                    var scriptId = request.responseText;
+                    console.log(scriptId);
+
+                    const scripts = document.querySelector('#script-select');        
+                    var opt = document.createElement('option');
+                    opt.value = scriptId;
+                    opt.innerHTML = name;
+                    scripts.value = scriptId;
+                    loadedScriptId = scriptId;
+                    loadedScriptName = name;
+                    setTitle(name);
+                    scripts.appendChild(opt);
+                }
+            }
+
+            var body = {"Name": name,
+                        "Script": script};
+
+            request.send(JSON.stringify(body));
+        }
+}
+
+function onClickSave() {
+
+    const xml = Blockly.Xml.workspaceToDom(Blockly.mainWorkspace);
+    const script = Blockly.Xml.domToText(xml);
+
+    if (loadedScriptId) {
+        const request = new XMLHttpRequest();
+        request.open('PUT', 'http://192.168.0.10:5007/api/BlocklyScript/' + loadedScriptId);
+        request.setRequestHeader('Content-Type', 'application/json');
+
+
+        request.onreadystatechange = function() {
+            if (request.readyState == XMLHttpRequest.DONE) {
+                var scriptId = request.responseText;
+                console.log(scriptId);
+            }
+        }
+
+        var body = {"Name": loadedScriptName,
+                    "Script": script};
+
+        console.log("name:" + loadedScriptName);
+
+        request.send(JSON.stringify(body));
+    }
+    else {
+        getNameAndSave();
+    }
+}
+
+function onClickRun() {
+
+    var code = Blockly.JavaScript.workspaceToCode(workspace);
+           
+    console.log(code);
+
+    var body = {"Script": code};
+
+    const request = new XMLHttpRequest();
+    request.open('POST', 'http://192.168.0.10:5007/api/lightstrip/script');
+    request.setRequestHeader('Content-Type', 'application/json');    
+
+    request.send(JSON.stringify(body));
+}
+
+function load(scriptId) {
+
+    console.log("loading " + scriptId);
+    const request = new XMLHttpRequest();
+    request.open('GET', 'http://192.168.0.10:5007/api/BlocklyScript/' + scriptId);
+    request.setRequestHeader('Content-Type', 'application/json');
+
+    request.onreadystatechange = function() {
+        if (request.readyState == XMLHttpRequest.DONE) {
+
+            Blockly.mainWorkspace.clear();
+            const scriptObj = JSON.parse(request.responseText);
+            const xml = Blockly.Xml.textToDom(scriptObj.Script);
+            Blockly.Xml.domToWorkspace(xml, Blockly.mainWorkspace);
+            loadedScriptId = scriptId;
+            loadedScriptName = scriptObj.Name;
+            setTitle(scriptObj.Name);
+        }
+    }
+
+    request.send();
+}
+
+    var waitJson = {
+        "type": "wait",
+        "message0": "Wait %1 milliseconds",
+        "args0": [
+            {
+            "type": "input_value",
+            "name": "TIME",
+            "check": "Number",
+            "align": "RIGHT"
+            }
+        ],
+        "previousStatement": null,
+        "nextStatement": null,
+        "colour": 255
+    }
+
+    var setColorJson = {
+  "type": "set_color",
+  "message0": "Set light %1 to change to %2",
+  "args0": [
+    {
+      "type": "input_value",
+      "name": "ID",
+      "check": "Number",
+      "align": "RIGHT"
+    },
+    {
+      "type": "input_value",
+      "name": "COLOR",
+      "check": "Color",
+      "align": "CENTRE"
+    }
+  ],
+  "inputsInline": true,
+  "previousStatement": null,
+  "nextStatement": null,
+  "colour": 255,
+  "tooltip": "",
+  "helpUrl": ""
+};
+
+var updateColorsJson = {
+    "type" : "update_colors",
+    "message0" : "Set lights to new colors",
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": 255,
+    "tooltip": "",
+    "helpUrl": ""
+}
+
+var customColorJson = {
+    "type": "custom_color",
+    "message0": "Red %1 Green %2 Blue %3",
+    "args0" : [
+        {
+            "type": "input_value",
+            "name": "RED",
+            "check": "Number"
+        },
+        {
+            "type": "input_value",
+            "name": "GREEN",
+            "check": "Number"
+        },
+        {
+            "type": "input_value",
+            "name": "BLUE",
+            "check": "Number"
+        }
+    ],
+    "output": "Color",
+    "colour": 160
+}
+
+var hsvColorJson = {
+    "type": "hsv_color",
+    "message0": "Hue %1 Saturation %2 Value %3",
+    "args0" : [
+        {
+            "type": "input_value",
+            "name": "Hue",
+            "check": "Number"
+        },
+        {
+            "type": "input_value",
+            "name": "Saturation",
+            "check": "Number"
+        },
+        {
+            "type": "input_value",
+            "name": "Value",
+            "check": "Number"
+        }
+    ],
+    "output": "Color",
+    "colour": 160
+}
+
+var blackColorJson = {
+    "type": "black_color",
+    "message0": "Black",
+    "output": "Color",
+    "colour" : 0
+}
+
+var whiteColorJson = {
+    "type": "white_color",
+    "message0": "White",
+    "output": "Color",
+    "colour" : 0
+}
+
+var redColorJson = {
+    "type": "red_color",
+    "message0": "Red",
+    "output": "Color",
+    "colour" : 0
+}
+
+var greenColorJson = {
+    "type": "green_color",
+    "message0": "Green",
+    "output": "Color",
+    "colour" : 110
+}
+
+var blueColorJson = {
+    "type": "blue_color",
+    "message0": "Blue",
+    "output": "Color",
+    "colour" : 190
+}
+
+Blockly.Blocks['set_color'] = {
+  init: function() {
+    this.jsonInit(setColorJson);
+    // Assign 'this' to a variable for use in the tooltip closure below.
+    var thisBlock = this;
+    this.setTooltip(function() {
+      return 'Add a number to variable "%1".'.replace('%1',
+          thisBlock.getFieldValue('VAR'));
+    });
+  }
+};
+
+Blockly.JavaScript['set_color'] = function(block) {
+    var id = Blockly.JavaScript.valueToCode(block, 'ID', Blockly.JavaScript.ORDER_NONE);
+    var color = Blockly.JavaScript.valueToCode(block, 'COLOR', Blockly.JavaScript.ORDER_NONE);
+
+    var code = 'setColor(' + id + ', ' + color +')\n';
+    return code;
+};
+
+Blockly.Blocks['custom_color'] = {
+    init: function() {
+        this.jsonInit(customColorJson);
+    }
+}
+
+Blockly.JavaScript['custom_color'] = function(block) {
+    var red = Blockly.JavaScript.valueToCode(block, 'RED', Blockly.JavaScript.ORDER_NONE);
+    var green = Blockly.JavaScript.valueToCode(block, 'GREEN', Blockly.JavaScript.ORDER_NONE);
+    var blue = Blockly.JavaScript.valueToCode(block, 'BLUE', Blockly.JavaScript.ORDER_NONE);    
+
+    return ["rgbColor(" + red +", " + green + ", " + blue + ")", Blockly.JavaScript.ORDER_NONE];
+}
+
+Blockly.Blocks['hsv_color'] = {
+    init: function() {
+        this.jsonInit(hsvColorJson);
+    }
+}
+
+Blockly.JavaScript['hsv_color'] = function(block) {
+    var hue = Blockly.JavaScript.valueToCode(block, 'Hue', Blockly.JavaScript.ORDER_NONE);
+    var saturation = Blockly.JavaScript.valueToCode(block, 'Saturation', Blockly.JavaScript.ORDER_NONE);
+    var value = Blockly.JavaScript.valueToCode(block, 'Value', Blockly.JavaScript.ORDER_NONE);
+
+    return ["hsvColor(" + hue + ", " + saturation + ", " + value +")", Blockly.JavaScript.ORDER_NONE];
+}
+
+Blockly.Blocks['wait'] = {
+    init: function() {
+        this.jsonInit(waitJson);
+    }
+}
+
+Blockly.JavaScript['wait'] = function(block) {
+    var time = Blockly.JavaScript.valueToCode(block, 'TIME', Blockly.JavaScript.ORDER_NONE);
+    var code = 'delay(' + time + ')\n';
+    return code;
+};
+
+Blockly.Blocks['update_colors'] = {
+    init: function() {
+        this.jsonInit(updateColorsJson);
+    }
+}
+
+Blockly.JavaScript['update_colors'] = function(block) {
+     var code = 'updateColors()\n';
+    return code;
+};
+
+Blockly.Blocks['black_color'] = {
+    init: function() {
+        this.jsonInit(blackColorJson);
+    }
+}
+
+Blockly.JavaScript['black_color'] = function(block) {
+    return ["rgbColor(0,0,0)", Blockly.JavaScript.ORDER_NONE];
+}
+
+Blockly.Blocks['white_color'] = {
+    init: function() {
+        this.jsonInit(whiteColorJson);
+    }
+}
+
+Blockly.JavaScript['white_color'] = function(block) {
+    return ["rgbColor(127,127,127)", Blockly.JavaScript.ORDER_NONE];
+}
+
+Blockly.Blocks['red_color'] = {
+    init: function() {
+        this.jsonInit(redColorJson);
+    }
+}
+
+Blockly.JavaScript['red_color'] = function(block) {
+    return ['rgbColor(127,0,0)', Blockly.JavaScript.ORDER_NONE];
+}
+
+Blockly.Blocks['green_color'] = {
+    init: function() {
+        this.jsonInit(greenColorJson);
+    }
+}
+
+Blockly.JavaScript['green_color'] = function(block) {
+    return ["rgbColor(0,127,0)", Blockly.JavaScript.ORDER_NONE];
+}
+
+Blockly.Blocks['blue_color'] = {
+    init: function() {
+        this.jsonInit(blueColorJson);
+    }
+}
+
+Blockly.JavaScript['blue_color'] = function(block) {
+    return ["rgbColor(0,0,127)", Blockly.JavaScript.ORDER_NONE];
+}
+
+var workspace = Blockly.inject('blocklyDiv',
+                {media: './node_modules/blockly/media/', toolbox: document.getElementById('toolbox')});
+
+loadEntries();
+
+</script>
+</body>
+</html>
