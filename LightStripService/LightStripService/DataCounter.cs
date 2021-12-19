@@ -23,14 +23,16 @@ namespace ChristmasLightServer
     {
         private readonly Mutex _mutex;
         private readonly ILogger<DataCounter> _logger;
+        private readonly IConfiguration _configuration;
         private readonly EventWaitHandle _reportEvent;
         private readonly Thread _workerThread;
         private int _byteCount;
 
-        public DataCounter(ILogger<DataCounter> logger)
+        public DataCounter(ILogger<DataCounter> logger, IConfiguration configuration)
         {
             _mutex = new Mutex(false);
             _logger = logger;
+            _configuration = configuration;
             _reportEvent = new EventWaitHandle(false, EventResetMode.AutoReset);
             _workerThread = new Thread(new ThreadStart(() => Worker()));
             _byteCount = 0;
@@ -61,7 +63,8 @@ namespace ChristmasLightServer
             if (bytesToReport > 0)
             {
                 HttpClient client = new HttpClient();
-                client.BaseAddress = new Uri("http://192.168.0.10:9200"); //local elasticsearch
+               
+                client.BaseAddress = new Uri(_configuration["ElasticUri"]);
 
                 var time = DateTime.UtcNow;
                 var url = string.Format($"datacounter{time.Year:0000}{time.Month:00}{time.Day:00}/_doc");

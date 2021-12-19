@@ -15,6 +15,7 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Configuration.AddEnvironmentVariables(prefix: "LightStripService_");
 builder.Services.AddRazorPages();
 builder.Services.AddSingleton<ILightService, LightService>();
 builder.Services.AddSingleton<IBlocklyScriptService, BlocklyScriptService> ();
