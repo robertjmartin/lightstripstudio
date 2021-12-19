@@ -11,7 +11,7 @@ namespace ChristmasLightServerTests
     [TestClass]
     public class ScriptParserTests
     {
-        [TestMethod]
+/*      [TestMethod]
         public void Test()
         {
             ScriptParser parser = new ScriptParser();
@@ -28,5 +28,6 @@ namespace ChristmasLightServerTests
             parser.StartScript("setColor(0, hsvColor(315,100,64))");
             var result = parser.GetCommandsFromScript();
         }
+*/
     }
 }

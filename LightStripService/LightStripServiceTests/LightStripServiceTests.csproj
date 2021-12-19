@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChristmasLightServer\LightStripService.csproj" />
+    <ProjectReference Include="..\LightStripService\LightStripService.csproj" />
   </ItemGroup>
 
 </Project>
