@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
-
+    <BaseOutputPath>$(SolutionDir)build\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(SolutionDir)build\obj</BaseIntermediateOutputPath>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

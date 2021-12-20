@@ -4,6 +4,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <BaseOutputPath>$(SolutionDir)build\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(SolutionDir)build\obj</BaseIntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
