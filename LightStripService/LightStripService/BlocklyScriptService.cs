@@ -6,8 +6,6 @@ namespace ChristmasLightServer
 {  
     public struct BlocklyScriptEntry
     {
-        private static string ScriptPathRoot = @"C:\BlocklyScripts";
-
         public BlocklyScriptEntry(BlocklyScript script)
         {
             guid = script.guid;
@@ -21,22 +19,20 @@ namespace ChristmasLightServer
         public string Name { get; set; }
 
         [JsonIgnore]
-        public string ScriptFilePath
+        public string ScriptFileName
         {
             get
             {
-                var ScriptFile = guid.ToString() + ".blocklyScript";
-                return Path.Combine(ScriptPathRoot, ScriptFile);
+                return guid.ToString() + ".blocklyScript"; ;
             }
         }
 
         [JsonIgnore]
-        public string EntryFilePath
+        public string EntryFileName
         {
             get
             {
-                var EntryFile = guid.ToString() + ".json";
-                return Path.Combine(ScriptPathRoot, EntryFile);
+                return guid.ToString() + ".json";
             }
         }
     }
@@ -56,12 +52,14 @@ namespace ChristmasLightServer
     public class BlocklyScriptService : IBlocklyScriptService
     {
         private readonly ILogger<BlocklyScriptService> _logger;
+        private readonly string _rootPath;
         private readonly Dictionary<Guid, BlocklyScriptEntry> _entrys;
         private bool _initialized = false;
 
-        public BlocklyScriptService(ILogger<BlocklyScriptService> logger)
+        public BlocklyScriptService(ILogger<BlocklyScriptService> logger, IConfiguration configuration)
         {
             _logger = logger;
+            _rootPath = configuration["bspath"];
             _entrys = new Dictionary<Guid, BlocklyScriptEntry>();
         }
 
@@ -75,7 +73,7 @@ namespace ChristmasLightServer
 
             if (_entrys.TryGetValue(id, out BlocklyScriptEntry entry))
             {
-                var script = JsonSerializer.Deserialize<BlocklyScript>(await File.ReadAllTextAsync(entry.ScriptFilePath));
+                var script = JsonSerializer.Deserialize<BlocklyScript>(await File.ReadAllTextAsync(Path.Combine(_rootPath, entry.ScriptFileName)));
                 return script;
             }
             throw new FileNotFoundException();
@@ -104,8 +102,8 @@ namespace ChristmasLightServer
                 var entry = new BlocklyScriptEntry(script);
 
                 _entrys[id] = entry;
-                await File.WriteAllTextAsync(entry.EntryFilePath, JsonSerializer.Serialize(entry));
-                await File.WriteAllTextAsync(entry.ScriptFilePath, JsonSerializer.Serialize(script));
+                await File.WriteAllTextAsync(Path.Combine(_rootPath, entry.EntryFileName), JsonSerializer.Serialize(entry));
+                await File.WriteAllTextAsync(Path.Combine(_rootPath, entry.ScriptFileName), JsonSerializer.Serialize(script));
                 return true;
             }
             catch (Exception ex)
@@ -119,7 +117,7 @@ namespace ChristmasLightServer
         {
             var timer = new Stopwatch();
             timer.Start();
-            string ScriptPathRoot = @"C:\BlocklyScripts";
+            string ScriptPathRoot = _rootPath;
             var entryFiles = Directory.EnumerateFiles(ScriptPathRoot, "*.json");
 
             foreach (var entryFile in entryFiles)
