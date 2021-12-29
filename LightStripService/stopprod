@@ -1,0 +1,8 @@
+sudo docker stop lightservice
+sudo docker stop kibana
+sudo docker stop elastic
+
+sudo docker rm lightservice
+sudo docker rm kibana
+sudo docker rm elastic
+

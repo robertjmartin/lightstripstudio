@@ -1,0 +1,28 @@
+sudo docker stop lightservicetest
+sudo docker stop kibanatest
+sudo docker stop elastictest
+
+sudo docker rm lightservicetest
+sudo docker rm kibanatest
+sudo docker rm elastictest
+
+sudo docker run -d --name elastictest \
+                   --net lightservicetestnet \
+                   --volume /data/test/Elasticsearch:/usr/share/elasticsearch/data \
+                   -e "discovery.type=single-node" \
+                   elasticsearch:7.16.2
+
+sudo docker run -d --name kibanatest \
+                   --net lightservicetestnet \
+                   -p 192.168.0.10:5602:5601 \
+                   -e "ELASTICSEARCH_HOSTS=http://elastictest:9200" \
+                   kibana:7.16.2
+
+sudo docker run -d --name lightservicetest \
+                   --net lightservicetestnet \
+                   --volume /data/test/bs:/data/bs \
+                   -p 192.168.0.10:5008:80 \
+                   -e "LightStripService_ElasticUri=elastic_test:9200" \
+                   -e "LightStripService_bspath=/data/bs" \
+                   lightservice:latest
+

@@ -1,0 +1,8 @@
+sudo docker stop lightservicetest
+sudo docker stop kibanatest
+sudo docker stop elastictest
+
+sudo docker rm lightservicetest
+sudo docker rm kibanatest
+sudo docker rm elastictest
+
